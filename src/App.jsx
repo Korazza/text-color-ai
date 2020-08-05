@@ -19,7 +19,6 @@ const App = () => {
 
 	useEffect(() => {
 		(async () => {
-			console.log('init');
 			model.current.add(
 				tf.layers.dense({ inputShape: [3], units: 6, activation: 'relu' })
 			);
@@ -35,7 +34,6 @@ const App = () => {
 	}, []);
 
 	useEffect(() => {
-		console.log('predict');
 		tf.engine().startScope();
 		const input = tf.tensor2d([color]).div(255.0);
 		const output = model.current.predict(input);
@@ -45,7 +43,6 @@ const App = () => {
 
 	const train = async () => {
 		tf.engine().startScope();
-		console.log('train');
 		const epochs = 200;
 		const X = tf.tensor2d(trainingData.map((color) => color.input)).div(255.0);
 		const y = tf.tensor1d(trainingData.map((color) => color.output));
