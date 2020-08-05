@@ -1,17 +1,15 @@
 .color {
 	display: flex;
 	flex-direction: column;
-	width: 500px;
-	height: 500px;
 	justify-content: center;
 	align-items: center;
 	font-size: 1.5em;
 }
 
-.black {
-	color: #000;
-}
-
-.white {
-	color: #fff;
+.container {
+	display: flex;
+	padding: 6em 0;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
 }

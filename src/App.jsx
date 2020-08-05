@@ -1,73 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import trainingData from './../../data/training.json';
+import trainingData from './data/training.json';
 import './App.scss';
 
 const App = () => {
-	const [model, setModel] = useState(new tf.Sequential());
-	const [color, setColor] = useState({
-		r: 0,
-		g: 0,
-		b: 0,
-	});
+	const model = useRef(tf.sequential());
+	const randomColor = () => {
+		return [
+			Math.floor(Math.random() * 255),
+			Math.floor(Math.random() * 255),
+			Math.floor(Math.random() * 255),
+		];
+	};
+	const [color, setColor] = useState([0, 0, 0]);
+	const [loss, setLoss] = useState(0);
+	const [accuracy, setAccuracy] = useState(0);
 	const [prediction, setPrediction] = useState(0);
 
-	const setRandomColor = () => {
-		let r = Math.floor(Math.random() * Math.floor(255));
-		let g = Math.floor(Math.random() * Math.floor(255));
-		let b = Math.floor(Math.random() * Math.floor(255));
-		setColor({ r, g, b });
-		let output = model.predict(tf.tensor1d([color.r, color.g, color.b]));
-		setPrediction(output.read().dataSync());
-	};
-
-	const addTrainingColor = (input, output) => {
-		trainingData.push({ input, output });
-		setRandomColor();
-		let X = tf.tensor1d([2, 4]);
-		let y = tf.tensor1d([2, 4]);
-		model.fit(X, y);
-	};
-
 	useEffect(() => {
-		setModel(tf.sequential());
-		setRandomColor();
+		(async () => {
+			console.log('init');
+			model.current.add(
+				tf.layers.dense({ inputShape: [3], units: 6, activation: 'relu' })
+			);
+			model.current.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }));
+			model.current.compile({
+				loss: 'meanSquaredError',
+				optimizer: tf.train.adam(0.05),
+				metrics: ['accuracy'],
+			});
+			await train();
+			setColor(randomColor());
+		})();
 	}, []);
 
 	useEffect(() => {
-		model.add(
-			tf.layers.dense({ units: 12, inputShape: [3, trainingData.length] })
-		);
-		model.add(tf.layers.dense({ units: 6 }));
-		model.add(tf.layers.dense({ units: 1 }));
-		model.compile({
-			loss: 'meanSquaredError',
-			optimizer: 'adam',
-		});
-	}, [model]);
+		console.log('predict');
+		tf.engine().startScope();
+		const input = tf.tensor2d([color]).div(255.0);
+		const output = model.current.predict(input);
+		setPrediction(output.dataSync());
+		tf.engine().endScope();
+	}, [color]);
+
+	const train = async () => {
+		tf.engine().startScope();
+		console.log('train');
+		const epochs = 200;
+		const X = tf.tensor2d(trainingData.map((color) => color.input)).div(255.0);
+		const y = tf.tensor1d(trainingData.map((color) => color.output));
+		const history = (await model.current.fit(X, y, { epochs })).history;
+		setLoss(history.loss[epochs - 1]);
+		setAccuracy(history.acc[epochs - 1]);
+		tf.engine().endScope();
+	};
+
+	const componentToHex = (c) => {
+		var hex = c.toString(16);
+		return hex.length === 1 ? '0' + hex : hex;
+	};
+
+	const rgb2hex = ([r, g, b]) => {
+		return '#' + componentToHex(r) + componentToHex(g) + componentToHex(b);
+	};
+
+	function hex2rgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result
+			? [
+					parseInt(result[1], 16),
+					parseInt(result[2], 16),
+					parseInt(result[3], 16),
+			  ]
+			: null;
+	}
 
 	return (
 		<>
 			<div
-				style={{ backgroundColor: `rgb(${color.r},${color.g},${color.b})` }}
+				style={{
+					backgroundColor: `rgb(${color[0]},${color[1]},${color[2]})`,
+				}}
 				className="color"
 			>
-				<div className="black">Black</div>
-				<div className="white">White</div>
 				<div
 					style={{
 						color: prediction > 0.5 ? '#fff' : '#000',
 					}}
 				>
-					Prediction
+					{prediction > 0.5 ? 'White' : 'Black'}
 				</div>
 			</div>
-			<button onClick={() => addTrainingColor(color, 0)}>Choose Black</button>
-			<button onClick={() => addTrainingColor(color, 1)}>Choose White</button>
-			<div>
-				[{color.r}, {color.g}, {color.b}]
+			<div className="container">
+				<label htmlFor="color">Color</label>
+				<input
+					type="color"
+					id="color"
+					value={rgb2hex(color)}
+					onChange={(e) => setColor(hex2rgb(e.target.value))}
+				/>
+				<button onClick={() => setColor(randomColor())}>Random Color</button>
+				<div>Prediction: {prediction}</div>
+				<div>Loss: {loss * 100}%</div>
+				<div>Accuracy: {accuracy * 100}%</div>
 			</div>
-			<pre>{JSON.stringify(trainingData)}</pre>
 		</>
 	);
 };
