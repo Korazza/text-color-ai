@@ -67,7 +67,11 @@ const App = () => {
 						color: prediction > 0.5 ? '#fff' : '#000',
 					}}
 				>
-					{prediction > 0.5 ? 'White' : 'Black'}
+					{prediction === 0
+						? 'Loading...'
+						: prediction > 0.5
+						? 'White'
+						: 'Black'}
 				</div>
 			</div>
 			<div className="container">
