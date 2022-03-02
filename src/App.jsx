@@ -56,9 +56,10 @@ const App = () => {
 	}
 
 	const getPercentagePrediction = () => {
+		const percentage = (prediction * 100).toFixed(2)
 		return prediction > 0.5
-			? `${(prediction * 100).toFixed(2)} white`
-			: `${(100 - prediction * 100).toFixed(2)} black`
+			? `${percentage}% white`
+			: `${100 - percentage}% black`
 	}
 
 	return (
