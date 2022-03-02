@@ -18,7 +18,6 @@ const App = () => {
 	useEffect(() => {
 		;(async () => {
 			model.current = await tf.loadLayersModel('./model/model.json')
-			console.log(model.current)
 			setColor(randomColor())
 		})()
 	}, [])
@@ -29,7 +28,6 @@ const App = () => {
 			tf.engine().startScope()
 			const input = tf.tensor2d([color]).div(255.0)
 			const output = await model.current.predict(input).data()
-			console.log(output)
 			setPrediction(output)
 			tf.engine().endScope()
 		})()
